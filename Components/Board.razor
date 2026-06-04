@@ -1,0 +1,136 @@
+@inject GameState State
+@rendermode InteractiveServer
+
+<style>
+    :root {
+        --board-bg: #2196F3;
+        --player1: #FF6B6B;
+        --player2: #FFD93D;
+    }
+</style>
+
+<nav>
+    @for (byte i = 0; i < 7; i++)
+    {
+        var col = i;
+        <span title="Click to play a piece" @onclick="() => PlayPiece(col)">🔽</span>
+    }
+</nav>
+
+<div class="status-container">
+    <div class="error-badge">@errorMessage</div>
+    <div class="turn-indicator">@CurrentTurn</div>
+</div>
+
+<div class="action-row">
+    <button class="undo-button" @onclick="UndoMove" disabled="@(!State.CanUndo || !string.IsNullOrEmpty(winnerMessage))">
+        Undo Last Move
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(winnerMessage))
+{
+    <div class="game-over-overlay">
+        <div class="game-over-card">
+            <div class="game-over-header">
+                <span class="trophy-emoji">🏆</span>
+            </div>
+            <h2 class="game-over-message">@winnerMessage</h2>
+            <button class="reset-button" @onclick="ResetGame">
+                <span class="reset-icon">🎮</span>
+                Play Again
+            </button>
+        </div>
+    </div>
+}
+
+<div>
+    <div class="board">
+        @for (var i = 0; i < 42; i++)
+        {
+            <span class="container">
+                <span></span>
+            </span>
+        }
+    </div>
+    @for (var i = 0; i < 42; i++)
+    {
+        <span class="@pieces[i]"></span>
+    }
+</div>
+
+@code {
+    private string[] pieces = new string[42];
+    private string winnerMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private string CurrentTurn => (winnerMessage == string.Empty) ? $"Player {State.PlayerTurn}'s Turn" : "";
+    private string ResetStyle => (winnerMessage == string.Empty) ? "display: none;" : "";
+
+    protected override void OnInitialized()
+    {
+        State.ResetBoard();
+    }
+
+    private void PlayPiece(byte col)
+    {
+        errorMessage = string.Empty;
+        try
+        {
+            var player = State.PlayerTurn;
+            var turn = State.CurrentTurn;
+            var landingRow = State.PlayPiece(col);
+            pieces[turn] = $"player{player} col{col} drop{landingRow}";
+        }
+        catch (ArgumentException ex)
+        {
+            errorMessage = ex.Message;
+        }
+
+        winnerMessage = State.CheckForWin() switch
+        {
+            GameState.WinState.Player1_Wins => "Player 1 Wins!",
+            GameState.WinState.Player2_Wins => "Player 2 Wins!",
+            GameState.WinState.Tie => "It's a tie!",
+            _ => ""
+        };
+    }
+
+    void ResetGame()
+    {
+        State.ResetBoard();
+        winnerMessage = string.Empty;
+        errorMessage = string.Empty;
+        pieces = new string[42];
+    }
+
+    private void UndoMove()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            State.UndoLastMove();
+            pieces = new string[42];
+
+            for (var i = 0; i < State.TheBoard.Count; i++)
+            {
+                if (State.TheBoard[i] == 0)
+                {
+                    continue;
+                }
+
+                var player = State.TheBoard[i];
+                var column = i % 7;
+                var row = (i / 7) + 1;
+                pieces[(row - 1) * 7 + column] = $"player{player} col{column} drop{row}";
+            }
+
+            winnerMessage = string.Empty;
+        }
+        catch (InvalidOperationException ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}
