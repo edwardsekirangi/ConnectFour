@@ -3,38 +3,56 @@
 @using ConnectFour.Services.Interfaces
 @inject IBudgetService BudgetService
 @inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Budgets</PageTitle>
 
-<h1>Budgets</h1>
+<AuthorizeView>
+    <Authorized>
+        <h1>Budgets</h1>
 
-<div class="row">
-    @foreach (var budget in budgets)
-    {
-        <div class="col-md-6 mb-4">
-            <div class="card p-3">
-                <h5>@budget.Category.Name</h5>
-                <p class="mb-1">@budget.Month/@budget.Year</p>
-                <p class="mb-1">Limit: @budget.Limit.ToString("C")</p>
-                <div class="progress mb-2" style="height: 1.5rem;">
-                    <div class="progress-bar" role="progressbar" style="width: @GetProgressPercent(budget)%" aria-valuenow="@GetProgressPercent(budget)" aria-valuemin="0" aria-valuemax="100">
-                        @GetProgressPercent(budget)%
+        <div class="row">
+            @foreach (var budget in budgets)
+            {
+                <div class="col-md-6 mb-4">
+                    <div class="card p-3">
+                        <h5>@budget.Category.Name</h5>
+                        <p class="mb-1">@budget.Month/@budget.Year</p>
+                        <p class="mb-1">Limit: @budget.Limit.ToString("C")</p>
+                        <div class="progress mb-2" style="height: 1.5rem;">
+                            <div class="progress-bar" role="progressbar" style="width: @GetProgressPercent(budget)%" aria-valuenow="@GetProgressPercent(budget)" aria-valuemin="0" aria-valuemax="100">
+                                @GetProgressPercent(budget)%
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
         </div>
-    }
-</div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You must be logged in to view budgets.</p>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
-    private const string DefaultUserId = "default-user-id";
+
     private IEnumerable<Budget> budgets = Array.Empty<Budget>();
     private IReadOnlyCollection<CategoryBudgetProgress> progressItems = Array.Empty<CategoryBudgetProgress>();
 
     protected override async Task OnInitializedAsync()
     {
-        budgets = (await BudgetService.GetBudgetsAsync(DefaultUserId)).ToArray();
-        progressItems = (await BudgetService.GetCategoryBudgetProgressAsync(DefaultUserId, DateTime.UtcNow.Month, DateTime.UtcNow.Year)).ToArray();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? false)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        budgets = (await BudgetService.GetBudgetsAsync(userId)).ToArray();
+        progressItems = (await BudgetService.GetCategoryBudgetProgressAsync(userId, DateTime.UtcNow.Month, DateTime.UtcNow.Year)).ToArray();
     }
 
     private decimal GetProgressPercent(Budget budget)

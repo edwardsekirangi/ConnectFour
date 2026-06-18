@@ -5,13 +5,16 @@
 @inject ITransactionService TransactionService
 @inject ICategoryService CategoryService
 @inject NavigationManager Navigation
-
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Add / Edit Transaction</PageTitle>
 
-<h1>@(TransactionId == 0 ? "Add Transaction" : "Edit Transaction")</h1>
+<AuthorizeView>
+    <Authorized Context="authState">
+        <h1>@(TransactionId == 0 ? "Add Transaction" : "Edit Transaction")</h1>
 
-<EditForm Model="transactionModel" OnValidSubmit="HandleValidSubmit">
+        <EditForm Model="transactionModel" OnValidSubmit="HandleValidSubmit">
+
             <DataAnnotationsValidator />
             <ValidationSummary />
 
@@ -54,23 +57,36 @@
             <button type="submit" class="btn btn-primary">Save</button>
             <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
         </EditForm>
-
+    </Authorized>
+    <NotAuthorized>
+        <p>You must be logged in to manage transactions.</p>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     [Parameter]
     public int TransactionId { get; set; }
 
-    private const string DefaultUserId = "default-user-id";
     private Transaction transactionModel = new Transaction { Date = DateTime.UtcNow };
     private IReadOnlyCollection<Category> categories = Array.Empty<Category>();
 
     protected override async Task OnInitializedAsync()
     {
-        categories = (await CategoryService.GetCategoriesAsync(DefaultUserId)).ToArray();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? false)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        categories = (await CategoryService.GetCategoriesAsync(userId)).ToArray();
 
         if (TransactionId != 0)
         {
-            var existing = await TransactionService.GetTransactionByIdAsync(TransactionId, DefaultUserId);
+            var existing = await TransactionService.GetTransactionByIdAsync(TransactionId, userId);
             if (existing is not null)
             {
                 transactionModel = existing;
@@ -80,7 +96,9 @@
 
     private async Task HandleValidSubmit()
     {
-        transactionModel.AppUserId = DefaultUserId;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        transactionModel.AppUserId = userId;
 
         if (TransactionId == 0)
         {

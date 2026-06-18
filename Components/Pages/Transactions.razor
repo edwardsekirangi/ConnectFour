@@ -4,56 +4,64 @@
 @inject ITransactionService TransactionService
 @inject ICategoryService CategoryService
 @inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Transactions</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Transactions</h1>
-    <button class="btn btn-primary" @onclick="AddTransaction">Add Transaction</button>
-</div>
+<AuthorizeView>
+    <Authorized>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1>Transactions</h1>
+            <button class="btn btn-primary" @onclick="AddTransaction">Add Transaction</button>
+        </div>
 
-<div class="mb-3">
-    <label class="form-label">Filter by category</label>
-    <select class="form-select" @bind="SelectedCategoryId">
-        <option value="0">All categories</option>
-        @foreach (var category in categories)
-        {
-            <option value="@category.Id">@category.Name</option>
-        }
-    </select>
-</div>
+        <div class="mb-3">
+            <label class="form-label">Filter by category</label>
+            <select class="form-select" @bind="SelectedCategoryId">
+                <option value="0">All categories</option>
+                @foreach (var category in categories)
+                {
+                    <option value="@category.Id">@category.Name</option>
+                }
+            </select>
+        </div>
 
-<table class="table table-bordered table-hover">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Type</th>
-            <th>Amount</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var transaction in filteredTransactions)
-        {
-            <tr>
-                <td>@transaction.Date.ToShortDateString()</td>
-                <td>@transaction.Description</td>
-                <td>@transaction.Category?.Name</td>
-                <td>@transaction.Type</td>
-                <td>@transaction.Amount.ToString("C")</td>
-                <td>
-                    <button class="btn btn-sm btn-secondary me-2" @onclick="() => EditTransaction(transaction.Id)">Edit</button>
-                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteTransaction(transaction.Id)">Delete</button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var transaction in filteredTransactions)
+                {
+                    <tr>
+                        <td>@transaction.Date.ToShortDateString()</td>
+                        <td>@transaction.Description</td>
+                        <td>@transaction.Category?.Name</td>
+                        <td>@transaction.Type</td>
+                        <td>@transaction.Amount.ToString("C")</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary me-2" @onclick="() => EditTransaction(transaction.Id)">Edit</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteTransaction(transaction.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </Authorized>
+    <NotAuthorized>
+        <p>You must be logged in to view transactions.</p>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
-    private const string DefaultUserId = "default-user-id";
+
     private IReadOnlyCollection<Transaction> transactions = Array.Empty<Transaction>();
     private IEnumerable<Transaction> filteredTransactions = Array.Empty<Transaction>();
     private IReadOnlyCollection<Category> categories = Array.Empty<Category>();
@@ -61,8 +69,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        categories = (await CategoryService.GetCategoriesAsync(DefaultUserId)).ToArray();
-        transactions = (await TransactionService.GetTransactionsAsync(DefaultUserId)).ToArray();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? false)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+        categories = (await CategoryService.GetCategoriesAsync(userId)).ToArray();
+        transactions = (await TransactionService.GetTransactionsAsync(userId)).ToArray();
         filteredTransactions = transactions;
     }
 
@@ -78,8 +97,10 @@
 
     private async Task DeleteTransaction(int transactionId)
     {
-        await TransactionService.DeleteTransactionAsync(transactionId, DefaultUserId);
-        transactions = (await TransactionService.GetTransactionsAsync(DefaultUserId)).ToArray();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        await TransactionService.DeleteTransactionAsync(transactionId, userId);
+        transactions = (await TransactionService.GetTransactionsAsync(userId)).ToArray();
         ApplyFilter();
     }
 

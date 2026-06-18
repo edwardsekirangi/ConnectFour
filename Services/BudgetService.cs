@@ -71,15 +71,13 @@ public class BudgetService : IBudgetService
 
     public async Task<decimal> GetRemainingBudgetAsync(string userId, int month, int year)
     {
-        var totalIncome = (await _dbContext.Transactions
+        var totalIncome = await _dbContext.Transactions
             .Where(t => t.AppUserId == userId && t.Type == TransactionType.Income && t.Date.Month == month && t.Date.Year == year)
-            .Select(t => t.Amount)
-            .ToListAsync()).Sum();
+            .SumAsync(t => (decimal?)t.Amount) ?? 0m;
 
-        var totalExpenses = (await _dbContext.Transactions
+        var totalExpenses = await _dbContext.Transactions
             .Where(t => t.AppUserId == userId && t.Type == TransactionType.Expense && t.Date.Month == month && t.Date.Year == year)
-            .Select(t => t.Amount)
-            .ToListAsync()).Sum();
+            .SumAsync(t => (decimal?)t.Amount) ?? 0m;
 
         return totalIncome - totalExpenses;
     }
@@ -95,10 +93,9 @@ public class BudgetService : IBudgetService
 
         foreach (var budget in budgets)
         {
-            var totalSpent = (await _dbContext.Transactions
+            var totalSpent = await _dbContext.Transactions
                 .Where(t => t.AppUserId == userId && t.CategoryId == budget.CategoryId && t.Type == TransactionType.Expense && t.Date.Month == month && t.Date.Year == year)
-                .Select(t => t.Amount)
-                .ToListAsync()).Sum();
+                .SumAsync(t => (decimal?)t.Amount) ?? 0m;
 
             result.Add(new CategoryBudgetProgress
             {

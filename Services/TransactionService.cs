@@ -71,18 +71,16 @@ public class TransactionService : ITransactionService
 
     public async Task<decimal> GetTotalIncomeAsync(string userId, int month, int year)
     {
-        return (await _dbContext.Transactions
+        return await _dbContext.Transactions
             .Where(t => t.AppUserId == userId && t.Type == TransactionType.Income && t.Date.Month == month && t.Date.Year == year)
-            .Select(t => t.Amount)
-            .ToListAsync()).Sum();
+            .SumAsync(t => (decimal?)t.Amount) ?? 0m;
     }
 
     public async Task<decimal> GetTotalExpensesAsync(string userId, int month, int year)
     {
-        return (await _dbContext.Transactions
+        return await _dbContext.Transactions
             .Where(t => t.AppUserId == userId && t.Type == TransactionType.Expense && t.Date.Month == month && t.Date.Year == year)
-            .Select(t => t.Amount)
-            .ToListAsync()).Sum();
+            .SumAsync(t => (decimal?)t.Amount) ?? 0m;
     }
 
     public async Task<IEnumerable<Transaction>> GetTransactionsByCategoryAsync(int categoryId, string userId, int month, int year)
@@ -96,11 +94,10 @@ public class TransactionService : ITransactionService
 
     public async Task<Dictionary<string, decimal>> GetExpenseTotalsByCategoryAsync(string userId, int month, int year)
     {
-        return (await _dbContext.Transactions
+        return await _dbContext.Transactions
             .Where(t => t.AppUserId == userId && t.Type == TransactionType.Expense && t.Date.Month == month && t.Date.Year == year)
-            .Select(t => new { t.Category.Name, t.Amount })
-            .ToListAsync())
-            .GroupBy(t => t.Name)
-            .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
+            .GroupBy(t => t.Category.Name)
+            .Select(g => new { CategoryName = g.Key, Total = g.Sum(t => t.Amount) })
+            .ToDictionaryAsync(g => g.CategoryName, g => g.Total);
     }
 }
