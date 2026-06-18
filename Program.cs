@@ -48,8 +48,6 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();

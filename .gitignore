@@ -1,0 +1,16 @@
+bin/
+obj/
+*.user
+*.suo
+*.log
+App_Data/*.sqlite
+App_Data/*.sqlite-shm
+App_Data/*.sqlite-wal
+.vs/
+*.vcxproj.user
+*.pdb
+*.dll
+publish/
+_PublishedWebsites/
+node_modules/
+dist/
