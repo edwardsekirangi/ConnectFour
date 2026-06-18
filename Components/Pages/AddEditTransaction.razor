@@ -1,0 +1,118 @@
+@page "/addedittransaction"
+@page "/addedittransaction/{TransactionId:int}"
+@using ConnectFour.Models
+@using ConnectFour.Services.Interfaces
+@inject ITransactionService TransactionService
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Add / Edit Transaction</PageTitle>
+
+<AuthorizeView>
+    <Authorized Context="authState">
+        <h1>@(TransactionId == 0 ? "Add Transaction" : "Edit Transaction")</h1>
+
+        <EditForm Model="transactionModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <InputText class="form-control" @bind-Value="transactionModel.Description" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Amount</label>
+                <InputNumber class="form-control" @bind-Value="transactionModel.Amount" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Date</label>
+                <InputDate class="form-control" @bind-Value="transactionModel.Date" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Type</label>
+                <InputSelect class="form-select" @bind-Value="transactionModel.Type">
+                    @foreach (TransactionType type in Enum.GetValues(typeof(TransactionType)))
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Category</label>
+                <InputSelect class="form-select" @bind-Value="transactionModel.CategoryId">
+                    <option value="0">Select category</option>
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+        </EditForm>
+    </Authorized>
+    <NotAuthorized>
+        <p>You must be logged in to manage transactions.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public int TransactionId { get; set; }
+
+    private Transaction transactionModel = new Transaction { Date = DateTime.UtcNow };
+    private IReadOnlyCollection<Category> categories = Array.Empty<Category>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? false)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        categories = (await CategoryService.GetCategoriesAsync(userId)).ToArray();
+
+        if (TransactionId != 0)
+        {
+            var existing = await TransactionService.GetTransactionByIdAsync(TransactionId, userId);
+            if (existing is not null)
+            {
+                transactionModel = existing;
+            }
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        transactionModel.AppUserId = userId;
+
+        if (TransactionId == 0)
+        {
+            await TransactionService.AddTransactionAsync(transactionModel);
+        }
+        else
+        {
+            await TransactionService.UpdateTransactionAsync(transactionModel);
+        }
+
+        Navigation.NavigateTo("/transactions");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/transactions");
+    }
+}

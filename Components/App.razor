@@ -15,8 +15,12 @@
 </head>
 
 <body>
-    <Routes />
+    <CascadingAuthenticationState>
+        <Routes />
+    </CascadingAuthenticationState>
     <ReconnectModal />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="@Assets["js/chartInterop.js"]"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 
