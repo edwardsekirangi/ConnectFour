@@ -1,0 +1,45 @@
+@page "/budgets"
+@using ConnectFour.Models
+@using ConnectFour.Services.Interfaces
+@inject IBudgetService BudgetService
+@inject NavigationManager Navigation
+
+<PageTitle>Budgets</PageTitle>
+
+<h1>Budgets</h1>
+
+<div class="row">
+    @foreach (var budget in budgets)
+    {
+        <div class="col-md-6 mb-4">
+            <div class="card p-3">
+                <h5>@budget.Category.Name</h5>
+                <p class="mb-1">@budget.Month/@budget.Year</p>
+                <p class="mb-1">Limit: @budget.Limit.ToString("C")</p>
+                <div class="progress mb-2" style="height: 1.5rem;">
+                    <div class="progress-bar" role="progressbar" style="width: @GetProgressPercent(budget)%" aria-valuenow="@GetProgressPercent(budget)" aria-valuemin="0" aria-valuemax="100">
+                        @GetProgressPercent(budget)%
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private const string DefaultUserId = "default-user-id";
+    private IEnumerable<Budget> budgets = Array.Empty<Budget>();
+    private IReadOnlyCollection<CategoryBudgetProgress> progressItems = Array.Empty<CategoryBudgetProgress>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        budgets = (await BudgetService.GetBudgetsAsync(DefaultUserId)).ToArray();
+        progressItems = (await BudgetService.GetCategoryBudgetProgressAsync(DefaultUserId, DateTime.UtcNow.Month, DateTime.UtcNow.Year)).ToArray();
+    }
+
+    private decimal GetProgressPercent(Budget budget)
+    {
+        var progress = progressItems.FirstOrDefault(x => x.CategoryId == budget.CategoryId);
+        return progress?.PercentSpent ?? 0m;
+    }
+}

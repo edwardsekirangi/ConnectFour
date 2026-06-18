@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\eddiedhin\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj": {}
+    "C:\\Users\\eddiedhin44\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj": {}
   },
   "projects": {
-    "C:\\Users\\eddiedhin\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj": {
+    "C:\\Users\\eddiedhin44\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\eddiedhin\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj",
+        "projectUniqueName": "C:\\Users\\eddiedhin44\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj",
         "projectName": "ConnectFour",
-        "projectPath": "C:\\Users\\eddiedhin\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj",
-        "packagesPath": "C:\\Users\\eddiedhin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\eddiedhin\\Desktop\\desktop folders\\course\\ConnectFour\\obj\\",
+        "projectPath": "C:\\Users\\eddiedhin44\\Desktop\\desktop folders\\course\\ConnectFour\\ConnectFour.csproj",
+        "packagesPath": "C:\\Users\\eddiedhin44\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\eddiedhin44\\Desktop\\desktop folders\\course\\ConnectFour\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\eddiedhin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\eddiedhin44\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -49,8 +49,18 @@
             "Microsoft.AspNetCore.App.Internal.Assets": {
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.8, )",
+              "version": "[10.0.9, )",
               "autoReferenced": true
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Sqlite": {
+              "target": "Package",
+              "version": "[8.0.0, )"
             }
           },
           "imports": [
@@ -72,7 +82,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

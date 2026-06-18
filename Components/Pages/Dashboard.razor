@@ -1,0 +1,87 @@
+@page "/dashboard"
+@using ConnectFour.Models
+@using ConnectFour.Services.Interfaces
+@inject IDashboardService DashboardService
+@inject ITransactionService TransactionService
+@inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Dashboard</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <h1>SmartSpend Dashboard</h1>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card p-3 mb-3">
+                    <h5>Total Income</h5>
+                    <p class="display-6 text-success">@totalIncome.ToString("C")</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 mb-3">
+                    <h5>Total Expenses</h5>
+                    <p class="display-6 text-danger">@totalExpenses.ToString("C")</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 mb-3">
+                    <h5>Remaining Budget</h5>
+                    <p class="display-6 text-primary">@remainingBudget.ToString("C")</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3">
+            <h5>Category Spend Chart</h5>
+            <canvas id="budgetChart" width="400" height="200"></canvas>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You must be logged in to view the dashboard.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@inject IJSRuntime JSRuntime
+
+@code {
+    private decimal totalIncome;
+    private decimal totalExpenses;
+    private decimal remainingBudget;
+
+    private string[] chartLabels = Array.Empty<string>();
+    private decimal[] chartValues = Array.Empty<decimal>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? false)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+        totalIncome = await DashboardService.GetTotalIncomeForCurrentMonthAsync(userId);
+        totalExpenses = await DashboardService.GetTotalExpensesForCurrentMonthAsync(userId);
+        remainingBudget = await DashboardService.GetRemainingBudgetForCurrentMonthAsync(userId);
+
+        var expenseTotals = await TransactionService.GetExpenseTotalsByCategoryAsync(userId, DateTime.UtcNow.Month, DateTime.UtcNow.Year);
+        chartLabels = expenseTotals.Keys.ToArray();
+        chartValues = expenseTotals.Values.ToArray();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await JSRuntime.InvokeVoidAsync("smartSpendChart.renderCategoryChart", "budgetChart", chartLabels, chartValues);
+    }
+}

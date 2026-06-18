@@ -1,0 +1,101 @@
+@page "/addedittransaction"
+@page "/addedittransaction/{TransactionId:int}"
+@using ConnectFour.Models
+@using ConnectFour.Services.Interfaces
+@inject ITransactionService TransactionService
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+
+<PageTitle>Add / Edit Transaction</PageTitle>
+
+<h1>@(TransactionId == 0 ? "Add Transaction" : "Edit Transaction")</h1>
+
+<EditForm Model="transactionModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <InputText class="form-control" @bind-Value="transactionModel.Description" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Amount</label>
+                <InputNumber class="form-control" @bind-Value="transactionModel.Amount" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Date</label>
+                <InputDate class="form-control" @bind-Value="transactionModel.Date" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Type</label>
+                <InputSelect class="form-select" @bind-Value="transactionModel.Type">
+                    @foreach (TransactionType type in Enum.GetValues(typeof(TransactionType)))
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Category</label>
+                <InputSelect class="form-select" @bind-Value="transactionModel.CategoryId">
+                    <option value="0">Select category</option>
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Cancel</button>
+        </EditForm>
+
+
+@code {
+    [Parameter]
+    public int TransactionId { get; set; }
+
+    private const string DefaultUserId = "default-user-id";
+    private Transaction transactionModel = new Transaction { Date = DateTime.UtcNow };
+    private IReadOnlyCollection<Category> categories = Array.Empty<Category>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = (await CategoryService.GetCategoriesAsync(DefaultUserId)).ToArray();
+
+        if (TransactionId != 0)
+        {
+            var existing = await TransactionService.GetTransactionByIdAsync(TransactionId, DefaultUserId);
+            if (existing is not null)
+            {
+                transactionModel = existing;
+            }
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        transactionModel.AppUserId = DefaultUserId;
+
+        if (TransactionId == 0)
+        {
+            await TransactionService.AddTransactionAsync(transactionModel);
+        }
+        else
+        {
+            await TransactionService.UpdateTransactionAsync(transactionModel);
+        }
+
+        Navigation.NavigateTo("/transactions");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/transactions");
+    }
+}

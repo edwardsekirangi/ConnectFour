@@ -1,0 +1,103 @@
+@page "/transactions"
+@using ConnectFour.Models
+@using ConnectFour.Services.Interfaces
+@inject ITransactionService TransactionService
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<PageTitle>Transactions</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Transactions</h1>
+    <button class="btn btn-primary" @onclick="AddTransaction">Add Transaction</button>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Filter by category</label>
+    <select class="form-select" @bind="SelectedCategoryId">
+        <option value="0">All categories</option>
+        @foreach (var category in categories)
+        {
+            <option value="@category.Id">@category.Name</option>
+        }
+    </select>
+</div>
+
+<table class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var transaction in filteredTransactions)
+        {
+            <tr>
+                <td>@transaction.Date.ToShortDateString()</td>
+                <td>@transaction.Description</td>
+                <td>@transaction.Category?.Name</td>
+                <td>@transaction.Type</td>
+                <td>@transaction.Amount.ToString("C")</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary me-2" @onclick="() => EditTransaction(transaction.Id)">Edit</button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteTransaction(transaction.Id)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private const string DefaultUserId = "default-user-id";
+    private IReadOnlyCollection<Transaction> transactions = Array.Empty<Transaction>();
+    private IEnumerable<Transaction> filteredTransactions = Array.Empty<Transaction>();
+    private IReadOnlyCollection<Category> categories = Array.Empty<Category>();
+    private int selectedCategoryId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = (await CategoryService.GetCategoriesAsync(DefaultUserId)).ToArray();
+        transactions = (await TransactionService.GetTransactionsAsync(DefaultUserId)).ToArray();
+        filteredTransactions = transactions;
+    }
+
+    private void AddTransaction()
+    {
+        Navigation.NavigateTo("/addedittransaction");
+    }
+
+    private void EditTransaction(int transactionId)
+    {
+        Navigation.NavigateTo($"/addedittransaction/{transactionId}");
+    }
+
+    private async Task DeleteTransaction(int transactionId)
+    {
+        await TransactionService.DeleteTransactionAsync(transactionId, DefaultUserId);
+        transactions = (await TransactionService.GetTransactionsAsync(DefaultUserId)).ToArray();
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        filteredTransactions = selectedCategoryId == 0
+            ? transactions
+            : transactions.Where(t => t.CategoryId == selectedCategoryId);
+    }
+
+    private int SelectedCategoryId
+    {
+        get => selectedCategoryId;
+        set
+        {
+            if (selectedCategoryId == value) return;
+            selectedCategoryId = value;
+            ApplyFilter();
+        }
+    }
+}

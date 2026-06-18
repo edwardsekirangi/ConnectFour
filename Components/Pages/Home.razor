@@ -1,7 +1,11 @@
 ﻿@page "/"
+@inject NavigationManager NavigationManager
 
-<PageTitle>Connect Four Game</PageTitle>
+<PageTitle>Home</PageTitle>
 
-<h1>Connect Four</h1>
-
-<Board />
+@code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo("/transactions");
+    }
+}

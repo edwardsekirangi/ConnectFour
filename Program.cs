@@ -1,5 +1,10 @@
 using ConnectFour;
-using ConnectFour.Components;
+using ConnectFour.Data;
+using ConnectFour.Models;
+using ConnectFour.Services;
+using ConnectFour.Services.Interfaces;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,9 +12,33 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    var dbPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "SmartSpendDb.sqlite");
+    Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+    options.UseSqlite(SqliteConnectionFactory.CreateConnectionString(dbPath));
+});
+
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthenticationStateProvider, DefaultAuthenticationStateProvider>();
+
 builder.Services.AddSingleton<GameState>();
+builder.Services.AddAntiforgery();
 
 var app = builder.Build();
+
+// Seed the database (create if missing)
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.EnsureCreated();
+    DatabaseSeeder.Seed(dbContext).GetAwaiter().GetResult();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -19,12 +48,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
-
+app.UseRouting();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>()
+app.MapRazorComponents<ConnectFour.Components.App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
