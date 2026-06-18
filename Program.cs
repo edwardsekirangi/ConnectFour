@@ -30,8 +30,6 @@ builder.Services.AddScoped<AuthenticationStateProvider, DefaultAuthenticationSta
 builder.Services.AddSingleton<GameState>();
 builder.Services.AddAntiforgery();
 
-var app = builder.Build();
-
 // Respect proxy headers (X-Forwarded-For, X-Forwarded-Proto) when running behind a reverse proxy
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -40,6 +38,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
+
+var app = builder.Build();
 
 // Seed the database (create if missing)
 using (var scope = app.Services.CreateScope())
