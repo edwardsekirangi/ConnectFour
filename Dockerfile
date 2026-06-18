@@ -15,6 +15,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# ensure App_Data exists and is writable for SQLite DB
+RUN mkdir -p /app/App_Data && chmod 777 /app/App_Data || true
+
 # Use environment variable for ASPNETCORE_URLS
 ENV ASPNETCORE_URLS="http://+:80"
 EXPOSE 80
