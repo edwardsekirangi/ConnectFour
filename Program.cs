@@ -6,6 +6,8 @@ using ConnectFour.Services.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,12 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, DefaultAuthenticationStateProvider>();
 
 builder.Services.AddSingleton<GameState>();
+
+// Persist data protection keys to disk so antiforgery tokens work across restarts/containers
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new System.IO.DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtection-Keys")))
+    .SetApplicationName("ConnectFourApp");
+
 builder.Services.AddAntiforgery();
 
 // Respect proxy headers (X-Forwarded-For, X-Forwarded-Proto) when running behind a reverse proxy
@@ -66,5 +74,19 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<ConnectFour.Components.App>()
     .AddInteractiveServerRenderMode();
+
+// Simple fallback endpoint to delete a transaction and redirect back to the transactions page.
+app.MapGet("/delete-transaction/{id:int}", async (int id, HttpContext http, ApplicationDbContext db) =>
+{
+    var userId = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    var transaction = await db.Transactions.FirstOrDefaultAsync(t => t.Id == id && t.AppUserId == userId);
+    if (transaction is not null)
+    {
+        db.Transactions.Remove(transaction);
+        await db.SaveChangesAsync();
+    }
+
+    return Results.Redirect("/transactions");
+});
 
 app.Run();

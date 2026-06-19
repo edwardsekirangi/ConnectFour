@@ -13,7 +13,7 @@
     <Authorized Context="authState">
         <h1>@(TransactionId == 0 ? "Add Transaction" : "Edit Transaction")</h1>
 
-        <EditForm Model="transactionModel" OnValidSubmit="HandleValidSubmit">
+        <EditForm Model="transactionModel" OnValidSubmit="HandleValidSubmit" FormName="TransactionForm">
 
             <DataAnnotationsValidator />
             <ValidationSummary />

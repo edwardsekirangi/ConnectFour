@@ -25,12 +25,21 @@ public static class DatabaseSeeder
         var categories = new List<Category>
         {
             new Category { Name = "Food", AppUserId = defaultUser.Id },
+            new Category { Name = "Groceries", AppUserId = defaultUser.Id },
+            new Category { Name = "Dining Out", AppUserId = defaultUser.Id },
             new Category { Name = "Transport", AppUserId = defaultUser.Id },
+            new Category { Name = "Fuel", AppUserId = defaultUser.Id },
             new Category { Name = "Entertainment", AppUserId = defaultUser.Id },
+            new Category { Name = "Subscriptions", AppUserId = defaultUser.Id },
             new Category { Name = "Utilities", AppUserId = defaultUser.Id },
             new Category { Name = "Healthcare", AppUserId = defaultUser.Id },
+            new Category { Name = "Rent", AppUserId = defaultUser.Id },
             new Category { Name = "Salary", AppUserId = defaultUser.Id },
             new Category { Name = "Freelance", AppUserId = defaultUser.Id },
+            new Category { Name = "Shopping", AppUserId = defaultUser.Id },
+            new Category { Name = "Education", AppUserId = defaultUser.Id },
+            new Category { Name = "Investment", AppUserId = defaultUser.Id },
+            new Category { Name = "Gifts", AppUserId = defaultUser.Id },
             new Category { Name = "Other", AppUserId = defaultUser.Id }
         };
 
@@ -46,7 +55,7 @@ public static class DatabaseSeeder
                 Date = DateTime.Now.AddDays(-10),
                 Description = "Grocery shopping",
                 Type = TransactionType.Expense,
-                CategoryId = categories.First(c => c.Name == "Food").Id,
+                CategoryId = categories.First(c => c.Name == "Groceries").Id,
                 AppUserId = defaultUser.Id
             },
             new Transaction
@@ -91,7 +100,43 @@ public static class DatabaseSeeder
                 Date = DateTime.Now,
                 Description = "Restaurant dinner",
                 Type = TransactionType.Expense,
-                CategoryId = categories.First(c => c.Name == "Food").Id,
+                CategoryId = categories.First(c => c.Name == "Dining Out").Id,
+                AppUserId = defaultUser.Id
+            },
+            new Transaction
+            {
+                Amount = 120.00m,
+                Date = DateTime.Now.AddDays(-8),
+                Description = "New headphones",
+                Type = TransactionType.Expense,
+                CategoryId = categories.First(c => c.Name == "Shopping").Id,
+                AppUserId = defaultUser.Id
+            },
+            new Transaction
+            {
+                Amount = 15.99m,
+                Date = DateTime.Now.AddDays(-6),
+                Description = "Streaming subscription",
+                Type = TransactionType.Expense,
+                CategoryId = categories.First(c => c.Name == "Subscriptions").Id,
+                AppUserId = defaultUser.Id
+            },
+            new Transaction
+            {
+                Amount = 500.00m,
+                Date = DateTime.Now.AddDays(-20),
+                Description = "Rent payment",
+                Type = TransactionType.Expense,
+                CategoryId = categories.First(c => c.Name == "Rent").Id,
+                AppUserId = defaultUser.Id
+            },
+            new Transaction
+            {
+                Amount = 200.00m,
+                Date = DateTime.Now.AddDays(-15),
+                Description = "Stock investment",
+                Type = TransactionType.Expense,
+                CategoryId = categories.First(c => c.Name == "Investment").Id,
                 AppUserId = defaultUser.Id
             }
         };
